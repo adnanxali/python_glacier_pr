@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - GlacierAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 min-h-screen">
+    
+    <audio id="sirenAudio" preload="auto">
+        <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
+    </audio>
+    
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                    <span class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">GlacierAI</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-700 font-medium">{{ session.username }}</span>
+                    <a href="{{ url_for('logout') }}" class="px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition duration-300">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        
+        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Upload Glacier Images</h2>
+            
+            <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">First Image (Before)</label>
+                        <input type="file" name="image1" accept="image/*" required
+                               class="w-full px-4 py-3 border-2 border-dashed border-purple-300 rounded-xl hover:border-purple-500 transition duration-300 cursor-pointer">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">Second Image (After)</label>
+                        <input type="file" name="image2" accept="image/*" required
+                               class="w-full px-4 py-3 border-2 border-dashed border-purple-300 rounded-xl hover:border-purple-500 transition duration-300 cursor-pointer">
+                    </div>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition duration-300">
+                    Analyze Glacier Growth
+                </button>
+            </form>
+        </div>
+
+        {% if show_results %}
+        <div class="animate-fade-in space-y-8">
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Original Images</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-600 mb-2">First Image</p>
+                            <img src="data:image/jpeg;base64,{{ image1 }}" class="w-full rounded-xl shadow-md">
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-600 mb-2">Second Image</p>
+                            <img src="data:image/jpeg;base64,{{ image2 }}" class="w-full rounded-xl shadow-md">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Detection Overlays</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-600 mb-2">Detection on First Image</p>
+                            <img src="data:image/jpeg;base64,{{ detection1 }}" class="w-full rounded-xl shadow-md">
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-600 mb-2">Detection on Second Image</p>
+                            <img src="data:image/jpeg;base64,{{ detection2 }}" class="w-full rounded-xl shadow-md">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Growth Analysis</h3>
+                    <img src="data:image/jpeg;base64,{{ result_image }}" class="w-full rounded-xl shadow-md mb-4">
+                    <div class="bg-gradient-to-br from-purple-50 to-blue-50 p-4 rounded-xl">
+                        <p class="text-sm text-gray-600"><span class="font-semibold">Green:</span> Consistent glacier area</p>
+                        <p class="text-sm text-gray-600"><span class="font-semibold">Red:</span> New growth area</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Analysis Statistics</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="bg-blue-50 p-4 rounded-xl">
+                            <p class="text-sm text-gray-600 font-semibold">Total glacier area (first image)</p>
+                            <p class="text-2xl font-bold text-blue-600">{{ area1 }} px</p>
+                        </div>
+                        
+                        <div class="bg-blue-50 p-4 rounded-xl">
+                            <p class="text-sm text-gray-600 font-semibold">Total glacier area (second image)</p>
+                            <p class="text-2xl font-bold text-blue-600">{{ area2 }} px</p>
+                        </div>
+                        
+                        <div class="bg-green-50 p-4 rounded-xl">
+                            <p class="text-sm text-gray-600 font-semibold">Consistent glacier area</p>
+                            <p class="text-2xl font-bold text-green-600">{{ intersection }} px</p>
+                        </div>
+                        
+                        <div class="bg-purple-50 p-4 rounded-xl">
+                            <p class="text-sm text-gray-600 font-semibold">New growth area</p>
+                            <p class="text-2xl font-bold text-purple-600">{{ growth }} px</p>
+                        </div>
+                        
+                        <div class="{% if growth_status == 'Increasing' %}bg-red-50{% else %}bg-green-50{% endif %} p-4 rounded-xl">
+                            <p class="text-sm text-gray-600 font-semibold">Growth percentage</p>
+                            <p class="text-2xl font-bold {% if growth_status == 'Increasing' %}text-red-600{% else %}text-green-600{% endif %}">{{ growth_percent|round(2) }}%</p>
+                        </div>
+                        
+                        <div class="{% if growth_status == 'Increasing' %}bg-red-50{% else %}bg-blue-50{% endif %} p-4 rounded-xl">
+                            <p class="text-sm text-gray-600 font-semibold">Growth Status</p>
+                            <p class="text-2xl font-bold {% if growth_status == 'Increasing' %}text-red-600{% else %}text-blue-600{% endif %}">{{ growth_status }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">Risk Assessment</h3>
+                
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <div class="{% if risk_binary == 'Risky' %}bg-red-50 border-2 border-red-300{% else %}bg-green-50 border-2 border-green-300{% endif %} p-6 rounded-xl {% if risk_binary == 'Risky' %}animate-pulse-slow{% endif %}">
+                        <p class="text-sm font-semibold text-gray-600 mb-2">AI Risk Assessment (Binary)</p>
+                        <p class="text-3xl font-bold {% if risk_binary == 'Risky' %}text-red-600{% else %}text-green-600{% endif %}">
+                            {% if risk_binary == 'Risky' %}🚨 {% endif %}{{ risk_binary }}
+                        </p>
+                    </div>
+                    
+                    <div class="{% if risk_level == 'High Risk' %}bg-red-50 border-2 border-red-300{% elif risk_level == 'Medium Risk' %}bg-orange-50 border-2 border-orange-300{% else %}bg-green-50 border-2 border-green-300{% endif %} p-6 rounded-xl {% if risk_level == 'High Risk' %}animate-pulse-slow{% endif %}">
+                        <p class="text-sm font-semibold text-gray-600 mb-2">Risk Level (Three-tier)</p>
+                        <p class="text-3xl font-bold {% if risk_level == 'High Risk' %}text-red-600{% elif risk_level == 'Medium Risk' %}text-orange-600{% else %}text-green-600{% endif %}">
+                            {% if risk_level == 'High Risk' %}⚠️ {% elif risk_level == 'Medium Risk' %}⚡ {% endif %}{{ risk_level }}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if gemini_solution %}
+                <div class="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-xl border-2 border-purple-200">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                        <h4 class="text-xl font-bold text-gray-800">AI-Generated Solutions & Recommendations</h4>
+                    </div>
+                    <div class="prose max-w-none text-gray-700 whitespace-pre-line">{{ gemini_solution }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        {% if show_results %}
+            {% if risk_binary == 'Risky' or risk_level == 'High Risk' %}
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(function() {
+                    var audio = document.getElementById('sirenAudio');
+                    var playPromise = audio.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.then(function() {
+                            console.log('Siren audio playing');
+                        }).catch(function(error) {
+                            console.log('Audio autoplay prevented. User interaction required.');
+                            document.body.addEventListener('click', function playOnClick() {
+                                audio.play();
+                                document.body.removeEventListener('click', playOnClick);
+                            }, { once: true });
+                        });
+                    }
+                }, 500);
+            });
+            {% endif %}
+        {% endif %}
+    </script>
+
+</body>
+</html>

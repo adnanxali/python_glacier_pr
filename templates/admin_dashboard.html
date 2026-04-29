@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - GlacierAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        #map {
+            height: 600px;
+            border-radius: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 min-h-screen">
+    
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                    <span class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Admin Panel</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-700 font-medium">{{ session.admin_username }}</span>
+                    <a href="{{ url_for('admin_logout') }}" class="px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition duration-300">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        
+        <div class="grid md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-600">Total Users</p>
+                        <p class="text-3xl font-bold text-purple-600">{{ users|length }}</p>
+                    </div>
+                    <svg class="w-12 h-12 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-600">Total Analyses</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ total_analyses }}</p>
+                    </div>
+                    <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-600">High Risk</p>
+                        <p class="text-3xl font-bold text-red-600">{{ high_risk }}</p>
+                    </div>
+                    <svg class="w-12 h-12 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-600">Low Risk</p>
+                        <p class="text-3xl font-bold text-green-600">{{ low_risk }}</p>
+                    </div>
+                    <svg class="w-12 h-12 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Glacier Risk Distribution Map</h2>
+            <div class="mb-4 flex items-center space-x-6">
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                    <span class="text-sm font-medium text-gray-700">Low Risk</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-orange-500 rounded-full"></div>
+                    <span class="text-sm font-medium text-gray-700">Medium Risk</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-red-500 rounded-full"></div>
+                    <span class="text-sm font-medium text-gray-700">High Risk</span>
+                </div>
+            </div>
+            <div id="map"></div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Registered Users</h2>
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                    {% for user in users %}
+                    <div class="bg-gradient-to-br from-purple-50 to-blue-50 p-4 rounded-xl">
+                        <p class="font-semibold text-gray-800">{{ user.username }}</p>
+                        <p class="text-sm text-gray-600">{{ user.email }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Joined: {{ user.created_at }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Recent Analyses</h2>
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                    {% for analysis in analyses[:10] %}
+                    <div class="bg-gradient-to-br from-blue-50 to-purple-50 p-4 rounded-xl">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <p class="font-semibold text-gray-800">Analysis #{{ analysis.id }}</p>
+                                <p class="text-sm text-gray-600">Growth: {{ analysis.growth_percentage|round(2) }}%</p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold
+                                {% if analysis.risk_level == 'High Risk' %}bg-red-100 text-red-700
+                                {% elif analysis.risk_level == 'Medium Risk' %}bg-orange-100 text-orange-700
+                                {% else %}bg-green-100 text-green-700{% endif %}">
+                                {{ analysis.risk_level }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500">{{ analysis.created_at }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var map = L.map('map').setView([46.5, 7.5], 7);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+        
+        var locations = {{ locations|tojson }};
+        
+        locations.forEach(function(loc) {
+            var markerColor = loc.color === 'red' ? '#ef4444' : (loc.color === 'orange' ? '#f97316' : '#22c55e');
+            
+            var circleMarker = L.circleMarker([loc.lat, loc.lon], {
+                radius: 12,
+                fillColor: markerColor,
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(map);
+            
+            circleMarker.bindPopup(`
+                <div class="p-2">
+                    <p class="font-bold text-gray-800">${loc.risk_level}</p>
+                    <p class="text-sm text-gray-600">Growth: ${loc.growth_percent.toFixed(2)}%</p>
+                    <p class="text-xs text-gray-500">${loc.created_at}</p>
+                </div>
+            `);
+        });
+    </script>
+
+</body>
+</html>
